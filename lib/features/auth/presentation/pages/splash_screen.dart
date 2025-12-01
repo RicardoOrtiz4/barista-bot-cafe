@@ -1,12 +1,12 @@
 ﻿import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 
 import 'package:barista_bot_cafe/core/constants/colors.dart';
 import 'package:barista_bot_cafe/core/constants/strings.dart';
-import 'package:barista_bot_cafe/shared/widgets/logo_widget.dart';
-import 'package:barista_bot_cafe/features/home/presentation/pages/home_screen.dart';
 import 'package:barista_bot_cafe/features/auth/presentation/pages/welcome_screen.dart';
+import 'package:barista_bot_cafe/features/home/presentation/pages/home_screen.dart';
+import 'package:barista_bot_cafe/shared/widgets/logo_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

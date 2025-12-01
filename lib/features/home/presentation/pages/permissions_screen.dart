@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-
 import 'package:barista_bot_cafe/core/constants/colors.dart';
 import 'package:barista_bot_cafe/core/permissions/permission_service.dart';
+import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});

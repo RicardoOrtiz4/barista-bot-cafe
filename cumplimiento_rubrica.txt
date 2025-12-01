@@ -1,63 +1,263 @@
-﻿Evaluación de cumplimiento – Rúbrica de Codificación Segura
+﻿Estás dentro del repo de una app Flutter.
+Ya corriste un análisis previo y el estado actual es este:
 
-Criterio 1: Validación y saneamiento (cliente/servidor)
-- Estado: Cumplido (cliente)
-- Evidencia: lib/core/security/validators.dart; uso en UI en login/registro; pruebas en test/validators_test.dart
-- Por qué: Se valida y sanea email/teléfono/nombre/contraseña; mensajes claros en español. Pruebas cubren casos básicos.
-- (imagen: validators.dart con reglas de email/teléfono/contraseña)
-- (imagen: formulario de Registro con errores de validación visibles)
+.github/workflows/cd-firebase.yml:
 
-Criterio 2: Autenticación y autorización robusta
-- Estado: Bueno (cliente con Firebase)
-- Evidencia: FirebaseAuth en login/registro; lib/core/security/rate_limiter.dart; navegación a Home
-- Por qué: Se usa Firebase Auth (tokens y expiración gestionados). En cliente mantenemos rate‑limit. MFA/proveedores/claims/roles configurables en Firebase.
-- (imagen: Snackbar “Inicio de sesión exitoso” y Home)
-- (imagen: Firebase Console → Authentication → Usuarios con el usuario creado)
+Tiene on: push a main y workflow_dispatch.
 
-Criterio 3: Gestión segura de secretos
-- Estado: Cumplido (móvil)
-- Evidencia: lib/core/security/secret_store.dart; inicialización en lib/main.dart
-- Por qué: En móvil se usa Keychain/Keystore vía flutter_secure_storage; no hay secretos hardcodeados; en Web no se persiste información sensible.
-- (imagen: fragmento de SecureStorageStore con FlutterSecureStorage)
+Instala Flutter (subosito/flutter-action) y Java 17.
 
-Criterio 4: Criptografía moderna en cliente
-- Estado: Parcial
-- Evidencia: Tránsito seguro + pinning (ver Criterio 7). Secretos cifrados por el sistema en reposo.
-- Por qué: No se guarda PII fuera de secure storage; AES‑GCM se agregaría si se persisten más datos sensibles.
-- (imagen: código de secure_http_client.dart mostrando verificación SHA‑256)
+Corre flutter pub get.
 
-Criterio 5: Protección en servidor
-- Estado: Cumplido vía servicio gestionado
-- Evidencia: Firebase Auth/Realtime Database (hash y cifrado en reposo gestionados por la plataforma)
-- Por qué: Firebase gestiona credenciales y cifrado; las reglas minimizan exposición.
-- (imagen: Firebase Console → Authentication y Realtime Database)
+Instala Ruby/fastlane y llama a bundle exec fastlane cd_firebase.
 
-Criterio 6: Permisos y privacidad (JIT, degradación)
-- Estado: Cumplido
-- Evidencia: lib/core/permissions/permission_service.dart; flujo en register_screen.dart; assets/docs/*.md
-- Por qué: Solicitud JIT de notificaciones y degradación si se deniega; documentos de privacidad incluidos.
-- (imagen: diálogo de permisos de notificaciones y aviso “Notificaciones desactivadas”)
+❌ No hace pasos de firma (no decodifica ANDROID_KEYSTORE_BASE64, no genera android/key.properties, no exporta passwords).
 
-Criterio 7: Seguridad en tránsito (M5)
-- Estado: Cumplido (cliente)
-- Evidencia: lib/core/network/secure_http_client.dart; lib/core/network/api_service.dart; lib/core/network/auth_service.dart
-- Por qué: Solo HTTPS y pinning SHA‑256 del certificado (DER) configurable; timeouts.
-- (imagen: ApiService forzando https y cliente con pinning)
+❌ No hace flutter build appbundle --release, solo delega a una lane que compila APK debug.
 
-Criterio 8: Mapeo OWASP Mobile Top 10
-- Estado: Parcial
-- Evidencia: docs/owasp_mapping.md
-- Por qué: M1, M2, M5, M8, M9 mapeados; faltan evidencias runtime para M8/M9 más allá de recomendaciones.
-- (imagen: extracto del mapeo resaltado)
+Android signing:
 
-Criterio 9: Documentación técnica y evidencias
-- Estado: Parcial/Bueno
-- Evidencia: docs/security.md; docs/masvs_checklist.md; tests; CI
-- Por qué: Documentación y checklist presentes; faltan capturas/logs y evidencias de backend.
-- (imagen: terminal con flutter analyze y flutter test; CI en verde)
+android/key.properties NO existe.
 
-Criterio 10: Calidad del código y CI
-- Estado: Parcial/Bueno
-- Evidencia: analysis_options.yaml; .github/workflows/flutter.yml; tests
-- Por qué: Lints y CI activos; se puede ampliar con análisis estático adicional o SBOM.
-- (imagen: workflow de GitHub Actions exitoso)
+android/app/build.gradle.kts usa signingConfigs.getByName("debug") en release.
+
+No define storeFile/storePassword/keyAlias/keyPassword ni referencia a android/app/release.keystore.
+
+No hay keystore en el repo ni pasos en workflows para generarlo/decodificarlo.
+
+Fastlane:
+
+Existe fastlane/Fastfile con una lane cd_firebase.
+
+Esa lane ejecuta flutter build apk --debug y sube build/app/outputs/flutter-apk/app-debug.apk.
+
+❌ No genera AAB release ni lo publica.
+
+Depende de FIREBASE_APP_ID_ANDROID / FIREBASE_TOKEN, pero no usa service account JSON.
+
+Firebase App Distribution:
+
+Ningún workflow exporta GOOGLE_APPLICATION_CREDENTIALS.
+
+No se consume FIREBASE_SERVICE_ACCOUNT_JSON.
+
+Usa firebase_cli_token en lugar del JSON de cuenta de servicio.
+
+Solo se usa el secret FIREBASE_APP_ID_ANDROID.
+
+Rutas/artefactos:
+
+El pipeline apunta al APK debug (build/app/outputs/flutter-apk/app-debug.apk).
+
+❌ Debería usar el AAB release (build/app/outputs/bundle/release/app-release.aab).
+
+iOS:
+
+No hay ios/fastlane, ni lanes deliver/upload_to_testflight. (Por ahora iOS es opcional.)
+
+Documentación/capturas:
+
+No hay carpeta de evidencias con capturas del pipeline ni de Firebase AD.
+
+🎯 Objetivo
+
+Quiero que modifiques el repo para que:
+
+Android release + firma correcta
+
+Use un keystore configurado mediante android/key.properties.
+
+build.gradle.kts tenga signingConfigs para release usando esas properties.
+
+buildTypes.release use signingConfigs["release"] y deje de reutilizar debug.
+
+Fastlane (lane “beta” o similar)
+
+Haya una lane que:
+
+Corra flutter build appbundle --release.
+
+Use el plugin firebase_app_distribution para subir el AAB a Firebase App Distribution.
+
+Use FIREBASE_APP_ID_ANDROID y un JSON de service account (GOOGLE_APPLICATION_CREDENTIALS apuntando a un archivo que contenga el contenido de FIREBASE_SERVICE_ACCOUNT_JSON).
+
+Workflow .github/workflows/cd-firebase.yml
+
+Decodifique el keystore desde el secret ANDROID_KEYSTORE_BASE64 y lo guarde en android/app/release.keystore.
+
+Genere android/key.properties con estos valores, que vendrán de GitHub Secrets:
+
+ANDROID_KEYSTORE_PASSWORD
+
+ANDROID_KEY_PASSWORD
+
+ANDROID_KEY_ALIAS
+
+Escriba el JSON de la service account en un archivo (ej. $HOME/gcp-sa.json) usando el secret FIREBASE_SERVICE_ACCOUNT_JSON.
+
+Exporte GOOGLE_APPLICATION_CREDENTIALS apuntando a ese archivo.
+
+Exporte FIREBASE_APP_ID_ANDROID desde secrets.
+
+Llame a la lane de fastlane correcta (beta o renombrada), que construya el AAB release y lo suba a Firebase AD.
+
+Mantenga on: push a main y workflow_dispatch.
+
+Rutas
+
+La lane de fastlane debe usar:
+
+aab_path: "build/app/outputs/bundle/release/app-release.aab"
+
+NO debe seguir usando el APK debug.
+
+NO commitear secretos
+
+No escribas valores reales, solo asume que los secrets existen en GitHub:
+
+ANDROID_KEYSTORE_BASE64
+
+ANDROID_KEYSTORE_PASSWORD
+
+ANDROID_KEY_PASSWORD
+
+ANDROID_KEY_ALIAS
+
+FIREBASE_SERVICE_ACCOUNT_JSON
+
+FIREBASE_APP_ID_ANDROID
+
+(opcional) FIREBASE_TESTERS o similar para el campo testers en Firebase AD.
+
+🛠 Cambios concretos que quiero que hagas
+1) android/app/build.gradle.kts
+
+Si ya hay bloque android { ... }, modifícalo para que:
+
+Declare algo como:
+
+val keystoreProperties = Properties().apply {
+    val keystorePropertiesFile = rootProject.file("android/key.properties")
+    if (keystorePropertiesFile.exists()) {
+        load(keystorePropertiesFile.inputStream())
+    }
+}
+
+
+Dentro de android { signingConfigs { ... } } crea un release:
+
+signingConfigs {
+    create("release") {
+        storeFile = file(keystoreProperties["storeFile"] as String)
+        storePassword = keystoreProperties["storePassword"] as String
+        keyAlias = keystoreProperties["keyAlias"] as String
+        keyPassword = keystoreProperties["keyPassword"] as String
+    }
+}
+
+
+Dentro de buildTypes { getByName("release") { ... } }:
+
+Usa signingConfig = signingConfigs.getByName("release").
+
+Asegúrate de que no dependa de debug.
+
+Ajusta solo lo necesario, sin romper otras configuraciones.
+
+2) Crear android/key.properties (solo plantilla, sin secrets)
+
+Crea el archivo android/key.properties de ejemplo, con valores de placeholder, tipo:
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=release.keystore
+
+
+Deja un comentario arriba aclarando que en CI se sobrescribe con los valores de GitHub Secrets.
+
+3) fastlane/Fastfile
+
+Mantén la lane actual cd_firebase si es útil, pero crea o ajusta una lane para producción/beta, por ejemplo:
+
+default_platform(:android)
+
+platform :android do
+  desc "CD Firebase: build AAB release y subir a Firebase App Distribution"
+  lane :beta do
+    sh("flutter pub get")
+    sh("flutter build appbundle --release")
+
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"],
+      testers: ENV["FIREBASE_TESTERS"],
+      release_notes: "Build automática desde GitHub Actions",
+      aab_path: "build/app/outputs/bundle/release/app-release.aab"
+    )
+  end
+end
+
+
+Usa el plugin firebase_app_distribution y asume que el auth se hace vía GOOGLE_APPLICATION_CREDENTIALS (cuenta de servicio).
+
+Si hace falta, agrega el Gemfile o la configuración necesaria para firebase_app_distribution, pero solo si es estrictamente necesario y consistente con el repo actual.
+
+4) .github/workflows/cd-firebase.yml
+
+Modifica el workflow para que:
+
+Decode keystore:
+
+- name: Decode keystore
+  run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+  env:
+    ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+
+Crear android/key.properties:
+
+- name: Configure key.properties
+  run: |
+    cat > android/key.properties <<EOF
+    storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+    keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+    storeFile=release.keystore
+    EOF
+
+
+Service account JSON (Firebase):
+
+- name: Write Firebase service account JSON
+  run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > $HOME/gcp-sa.json
+
+- name: Export env vars
+  run: |
+    echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-sa.json" >> $GITHUB_ENV
+    echo "FIREBASE_APP_ID_ANDROID=${{ secrets.FIREBASE_APP_ID_ANDROID }}" >> $GITHUB_ENV
+    echo "FIREBASE_TESTERS=${{ secrets.FIREBASE_TESTERS }}" >> $GITHUB_ENV
+
+
+Llamar a la lane correcta:
+
+Cambia el paso que ahora hace bundle exec fastlane cd_firebase para que ejecute:
+
+- name: Run fastlane beta
+  run: bundle exec fastlane beta
+
+
+No elimines nada útil del workflow, solo adáptalo para cumplir la rúbrica: AAB release + firma + Firebase App Distribution con service account.
+
+📦 Forma de entrega (cómo quiero que respondas)
+
+Respóndeme con:
+
+Lista de archivos modificados/creados.
+
+Para cada archivo, un diff estilo unified (diff --git ...) listo para copiar/pegar si lo necesito.
+
+Breve explicación de cada cambio (una línea por archivo).
+
+Si algo no se puede hacer por falta de contexto, explica qué falta.
+
+No hagas comentarios genéricos; aplica directamente los cambios al código del rep

@@ -1,9 +1,8 @@
 import 'dart:async';
 
+import 'package:barista_bot_cafe/core/logging/app_logger.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-
-import 'package:barista_bot_cafe/core/logging/app_logger.dart';
 
 /// Adaptador simple para reportar errores controlados y pasarlos a Crashlytics (si disponible).
 class CrashReporter {

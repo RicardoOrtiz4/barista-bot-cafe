@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
-import 'package:barista_bot_cafe/features/home/models/models.dart';
 import 'package:barista_bot_cafe/core/constants/colors.dart';
+import 'package:barista_bot_cafe/features/home/models/models.dart';
 import 'package:barista_bot_cafe/shared/widgets/custom_button.dart';
+import 'package:flutter/material.dart';
 
 class BeverageDetailScreen extends StatefulWidget {
   final Beverage beverage;

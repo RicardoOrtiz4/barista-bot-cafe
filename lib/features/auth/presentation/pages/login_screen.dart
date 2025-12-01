@@ -1,15 +1,14 @@
-﻿import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-import 'package:barista_bot_cafe/core/constants/colors.dart';
+﻿import 'package:barista_bot_cafe/core/constants/colors.dart';
 import 'package:barista_bot_cafe/core/constants/strings.dart';
+import 'package:barista_bot_cafe/core/security/rate_limiter.dart';
+import 'package:barista_bot_cafe/core/security/validators.dart';
+import 'package:barista_bot_cafe/features/auth/presentation/pages/register_screen.dart';
+import 'package:barista_bot_cafe/features/home/presentation/pages/home_screen.dart';
 import 'package:barista_bot_cafe/shared/widgets/custom_button.dart';
 import 'package:barista_bot_cafe/shared/widgets/custom_text_field.dart';
 import 'package:barista_bot_cafe/shared/widgets/logo_widget.dart';
-import 'package:barista_bot_cafe/features/auth/presentation/pages/register_screen.dart';
-import 'package:barista_bot_cafe/features/home/presentation/pages/home_screen.dart';
-import 'package:barista_bot_cafe/core/security/validators.dart';
-import 'package:barista_bot_cafe/core/security/rate_limiter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
